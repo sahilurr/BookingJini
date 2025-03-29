@@ -3,6 +3,7 @@ import requests
 import io
 import base64
 from PIL import Image, ImageDraw, ImageFont
+import openai
 import os
 from datetime import datetime
 import json
@@ -11,7 +12,7 @@ from typing import Dict, List, Tuple, Optional
 
 st.set_page_config(
     page_title="Hotel Social Media Post Generator",
-    page_icon="BJ.jpg",
+    page_icon="🏨",
     layout="wide"
 )
 
@@ -25,13 +26,14 @@ SOCIAL_MEDIA_CREDENTIALS = {
     "linkedin": st.secrets.get("LINKEDIN_TOKEN", "")
 }
 COLOR_PALETTES = {
-    "Elegant": ["#2c3e50", "#ecf0f1", "#3498db", "#e74c3c", "#f1c40f"],
-    "Tropical": ["#1abc9c", "#f39c12", "#3498db", "#e74c3c", "#f1c40f"],
-    "Classic": ["#34495e", "#ecf0f1", "#3498db", "#e67e22", "#f1c40f"],
-    "Modern": ["#2c3e50", "#ecf0f1", "#e74c3c", "#3498db", "#2ecc71"],
-    "Luxury": ["#2c3e50", "#f5f5f5", "#c0392b", "#f39c12", "#7f8c8d"]
+    "Elegant": ["#1F2833", "#C5C6C7", "#66FCF1", "#45A29E", "#0B0C10"],
+    "Tropical": ["#FF5733", "#FFC300", "#DAF7A6", "#C70039", "#900C3F"],
+    "Classic": ["#2E4053", "#D5D8DC", "#2874A6", "#CA6F1E", "#F4D03F"],
+    "Modern": ["#1B1B1B", "#FFFFFF", "#FF6F61", "#4A90E2", "#50C878"],
+    "Luxury": ["#4A235A", "#F4ECF7", "#BA4A00", "#D4AC0D", "#5D6D7E"]
 }
 LAYOUTS = {
+    "Top":"image with top text overlay",
     "Centered": "image with centered text overlay",
     "Split": "image on left, text on right",
     "Banner": "image with text banner at bottom",
@@ -52,6 +54,39 @@ if 'current_tab' not in st.session_state:
     st.session_state.current_tab = 0
 
 
+    
+def generate_promotional_tagline(hotel_name: str, occasion: str, audience: str) -> str:
+    if not GROQ_API_KEY:
+        return "Please set your GROQ API key in the app settings."
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system",
+                 "content": "You are a branding expert specializing in the hospitality industry. Create catchy promotional taglines (max 10 words) for hotels."},
+                {"role": "user",
+                 "content": f"Create a short and catchy promotional tagline (max 10 words) for {hotel_name}. Occasion: {occasion}. Target Audience: {audience}. Keep it engaging, professional, and inviting."}
+            ],
+            "temperature": 0.9,
+            "max_tokens": 20
+        }
+
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip().strip('"')
+
+    except Exception as e:
+        st.error(f"Error generating tagline: {str(e)}")
+        return "Error generating tagline. Please try again."
+    
+
+
 def generate_text_with_llama(prompt: str) -> str:
     if not GROQ_API_KEY:
         return "Please set your GROQ API key in the app settings."
@@ -69,7 +104,7 @@ def generate_text_with_llama(prompt: str) -> str:
                  "content": "You are a professional social media marketer specializing in hospitality. Create short, engaging captions for hotels."},
                 {"role": "user", "content": prompt}
             ],
-            "temperature": 0.7,
+            "temperature": 0.8,
             "max_tokens": 150
         }
 
@@ -119,12 +154,12 @@ def generate_image_with_stability(prompt: str) -> Optional[Image.Image]:
 
 
 def apply_layout(image: Image.Image, text: str, layout: str, colors: List[str], font_name: str,
-                 logo: Optional[Image.Image] = None) -> Image.Image:
+                 logo: Optional[Image.Image] = None, font_large_size: int = 300, font_small_size: int = 30) -> Image.Image:
     width, height = image.size
     draw = ImageDraw.Draw(image)
     try:
-        font_large = ImageFont.truetype(f"{font_name}.ttf", 36)
-        font_small = ImageFont.truetype(f"{font_name}.ttf", 24)
+        font_large = ImageFont.truetype(f"{font_name}.ttf", font_large_size)
+        font_small = ImageFont.truetype(f"{font_name}.ttf", font_small_size)
     except (IOError, OSError):
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
@@ -132,7 +167,38 @@ def apply_layout(image: Image.Image, text: str, layout: str, colors: List[str], 
     background_color = colors[0]
     text_color = colors[1]
 
-    if layout == "Centered":
+    if layout == "Top":
+        draw = ImageDraw.Draw(image)
+
+        # Split text into multiple lines if needed
+        words = text.split()
+        lines = []
+        current_line = []
+
+        for word in words:
+            current_line.append(word)
+            if len(' '.join(current_line)) > 30:  # Adjust based on text length
+                if len(current_line) > 1:
+                    lines.append(' '.join(current_line[:-1]))
+                    current_line = [current_line[-1]]
+                else:
+                    lines.append(' '.join(current_line))
+                    current_line = []
+
+        if current_line:
+            lines.append(' '.join(current_line))
+
+        text_y = 20  # Start text at the top with padding
+
+        line_spacing = 40  # Adjust line spacing based on font size
+        
+        for i, line in enumerate(lines):
+            line_width = font_large.getbbox(line)[2]
+            line_x = (width - line_width) // 2  # Center the text
+            draw.text((line_x, text_y + i * line_spacing), line, font=font_large, fill=text_color)
+
+
+    elif layout == "Centered":
         overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
         overlay_draw = ImageDraw.Draw(overlay)
         words = text.split()
@@ -283,6 +349,7 @@ def apply_layout(image: Image.Image, text: str, layout: str, colors: List[str], 
 
         image = collage
 
+    
     # Add logo if provided
     if logo:
         logo_size = min(width // 6, height // 6)
@@ -358,8 +425,8 @@ def main():
 
         # Hotel Information
         st.subheader("Hotel Information")
-        hotel_name = st.text_input("Hotel Name", "")
-        hotel_location = st.text_input("Location", "")
+        hotel_name = st.text_input("Hotel Name", "Rambagh Place")
+        hotel_location = st.text_input("Location", "Jaipur")
 
         # Upload hotel logo
         uploaded_logo = st.file_uploader("Upload Hotel Logo", type=["png", "jpg", "jpeg"])
@@ -453,6 +520,8 @@ def main():
 
                 st.session_state.generated_image = generate_image_with_stability(image_prompt)
 
+                st.session_state.generated_tagline = generate_promotional_tagline(hotel_name,occasion,audience)
+
                 st.session_state.design_context = {
                     "hotel_name": hotel_name,
                     "hotel_location": hotel_location,
@@ -487,7 +556,7 @@ def main():
 
                     composite_image = apply_layout(
                         st.session_state.generated_image.copy(),
-                        st.session_state.generated_text,
+                        st.session_state.generated_tagline,
                         selected_layout,
                         selected_palette,
                         selected_font,
@@ -507,6 +576,9 @@ def main():
 
                 edited_text = st.text_area("Edit Caption", st.session_state.generated_text, height=150)
                 st.session_state.generated_text = edited_text
+
+                edited_text = st.text_area("Promotional Tagline",st.session_state.generated_tagline,height=150)
+                st.session_state.generated_tagline = edited_text
 
                 if hasattr(st.session_state, 'design_context'):
                     new_color_palette = st.selectbox("Adjust Color Palette", list(COLOR_PALETTES.keys()),
