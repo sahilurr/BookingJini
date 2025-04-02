@@ -1,0 +1,7 @@
+streamlit==1.32.0
+Pillow==10.2.0
+groq==0.4.2
+stability-sdk==0.8.5
+python-dotenv==1.0.1
+requests==2.31.0
+streamlit-image-cropper==0.1.0 
