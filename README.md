@@ -157,7 +157,7 @@ A powerful AI-driven application that generates promotional content and social m
   - Environment variable access
 
 - **time** - Time-related functions
-  - API rate limiting
+  - API  limiting
   - Performance monitoring
 
 ## 🔧 API Setup
