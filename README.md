@@ -38,6 +38,8 @@ A powerful AI-driven application that generates promotional content and social m
 - Python 3.8 or higher
 - API keys for Groq and Stability AI
 - Social media platform tokens (optional)
+- ![telegram-cloud-photo-size-5-6122694237041575118-y](https://github.com/user-attachments/assets/c5c95c07-71e0-4d5d-bc0a-5fa886e6e24a)
+
 
 ### Installation
 
