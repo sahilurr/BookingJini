@@ -32,13 +32,24 @@ A powerful AI-driven application that generates promotional content and social m
 - Adventure Seekers, Wellness Enthusiasts
 - Honeymooners, Corporate Groups
 
+  
+###Demo Video
+
+https://drive.google.com/file/d/1mRSwmhKIEuYOmgflrgV20MbBs1WJV6tk/view?usp=drivesdk
+ 
+## RESULT 
+
+- ![telegram-cloud-photo-size-5-6122694237041575118-y](https://github.com/user-attachments/assets/c5c95c07-71e0-4d5d-bc0a-5fa886e6e24a)
+
+
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8 or higher
 - API keys for Groq and Stability AI
 - Social media platform tokens (optional)
-- ![telegram-cloud-photo-size-5-6122694237041575118-y](https://github.com/user-attachments/assets/c5c95c07-71e0-4d5d-bc0a-5fa886e6e24a)
+
 
 
 ### Installation
